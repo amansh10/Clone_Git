@@ -23,10 +23,11 @@ int File::creaeHashValue() {
     return rand();
 }
 void File::addFile() {
-    Repository R;
 
+
+string repository_name;
     cout<<"What is the repository name? "<<endl;
-    cin>>R.repository_name;
+    cin>>repository_name;
 
     cout << "What is the file name? "<<endl;
     cin>>file_name;
@@ -34,27 +35,45 @@ void File::addFile() {
     last_hash=creaeHashValue();
 
 
-    fs::path fullPath=R.repository_name+ "/"+file_name+ "_" +"1"+".txt";
+    fs::path fullPath=repository_name+ "/"+file_name+ "_" +"1"+".txt";
     ofstream fout(fullPath);
     fout<<"New File Creation";
+    fout.close();
 
-    ifstream file(fullPath);
+    ifstream file;
+    file.open(fullPath);
+
 
     if(file.is_open()){
         cout<<"File Opened Successfully! "<<endl;
 
         file_map[file_name+ "_" +"1"]=last_hash;
+        int rc= sqlite3_open("gitclone.db",&db);
+
+
+        const char* creation_command="CREATE TABLE IF NOT EXISTS git_info("
+                            "ID INTEGER PRIMARY KEY AUTOINCREMENT,"
+                            "FileName TEXT NOT NULL,"
+                            "HashValue INTEGER NOT NULL);";
+
+        rc= sqlite3_exec(db,creation_command,nullptr,0,&errMsg);
+
+        string insert_command="INSERT INTO git_info(FileName, HashValue) VALUES ('" + file_name + "_1','" + to_string(last_hash) + "');";
+
+        rc= sqlite3_exec(db,insert_command.c_str(),nullptr,0,&errMsg);
+
+        sqlite3_close(db);
     }
     else{
         cout<<"File Couldn't Open" <<endl;
     }
-    fout.close();
+
     file.close();
 
-}
+};
 
 void Commit::new_commit() {
-
+    int rc= sqlite3_open("gitclone.db",&db);
 
     cout<<"What is the repository name? "<<endl;
     cin>>repository_name;
@@ -78,6 +97,12 @@ void Commit::new_commit() {
    fout<<newLine;
    commit_ID=F.creaeHashValue();
    file_map[file_name + "_" + to_string(version)]=commit_ID;
+    string fullFileName = file_name + "_" + to_string(version);
+    string insert_command = "INSERT INTO git_info(FileName, HashValue) VALUES ('" + fullFileName + "','" + to_string(commit_ID) + "');";
+
+    rc= sqlite3_exec(db,insert_command.c_str(),nullptr,0,&errMsg);
+
+    sqlite3_close(db);
 
    fout.close();
 

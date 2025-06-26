@@ -8,9 +8,10 @@
 #include<iostream>
 #include<unordered_map>
 #include<string>
-#include<vector>
 #include<filesystem>
 #include<fstream>
+#include<sqlite3.h>
+
 
 
 using namespace std;
@@ -30,10 +31,12 @@ public:
 class File{
 public:
     File(){};
-
+    sqlite3 *db;
+    char *errMsg=nullptr;
 
     ifstream fin;
     string file_name;
+    string repostiory_name;
     int last_hash;
     unordered_map<string, int>file_map;
 
@@ -56,7 +59,7 @@ public:
     int commit_ID;
     string timestamp;
     unordered_map<string,string>snapshot;
-    vector<string>modifiedFiles;
+
 
     void new_commit();
     void commit_history();
