@@ -4,6 +4,36 @@
 
 #include"test.h"
 
+static int callback(void *data, int argc, char **argv, char **azColName) {
+    unordered_map<string, int>* file_map = static_cast<unordered_map<string, int>*>(data);
+
+    if (argc >= 2 && argv[0] && argv[1]) {
+        string fileName = argv[0];  // FileName column
+        int hashValue = stoi(argv[1]);  // HashValue column
+        (*file_map)[fileName] = hashValue;
+    }
+    return 0;
+};
+
+
+void loadDataFromDatabase(unordered_map<string, int>& file_map) {
+    sqlite3* db;
+    char* errMsg = 0;
+
+    int rc = sqlite3_open("gitclone.db", &db);
+
+    if (rc) {
+        cout << "Can't open database: " << sqlite3_errmsg(db) << endl;
+        return;
+    }
+    const char* select_command = "SELECT FileName, HashValue FROM git_info;";
+
+    rc = sqlite3_exec(db, select_command, callback, &file_map, &errMsg);
+
+    sqlite3_close(db);
+};
+
+
 void Repository::createRepository() {
     cout << "What is the repository name?  " << endl;
     cin.ignore();
@@ -110,14 +140,14 @@ void Commit::new_commit() {
     };
 
 
-
     void Commit::commit_history() {
+        loadDataFromDatabase(file_map);
         string folder_name ;
         cout<<"What is the repository name? "<<endl;
         cin>>folder_name;
 
         string line;
-         // Use actual repository name
+
 
         for (const auto& C : file_map) {
             cout << "File Name: " << C.first << endl;
@@ -125,7 +155,6 @@ void Commit::new_commit() {
 
             fs::path fullPath = folder_name + "/" + C.first + ".txt";
 
-            // RAII approach - file automatically closes when scope ends
             ifstream fin(fullPath);
             if (fin.is_open()) {
                 while (getline(fin, line)) {
@@ -142,6 +171,7 @@ void Commit::new_commit() {
 void Commit::particular_commit() {
     ifstream fin;
     string line;
+    loadDataFromDatabase(file_map);
 
         string folder_name ;
         cout<<"What is the repository name? "<<endl;
@@ -174,7 +204,7 @@ while(options!=6){
     cout<<"2. Create File"<<endl;
     cout<<"3. Commit New Changes? "<<endl;
     cout<<"4. Commit History"<<endl;
-    cout<<"6. View File At Particular Commit"<<endl;
+    cout<<"5. View File At Particular Commit"<<endl;
     cout<<"6. Break"<<endl;
 
     cin>>options;
