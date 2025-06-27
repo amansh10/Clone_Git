@@ -11,13 +11,15 @@
 #include<filesystem>
 #include<fstream>
 #include<sqlite3.h>
+#include<vector>
+
 
 
 
 using namespace std;
 namespace fs = std::filesystem;
-
-
+extern vector<string> file_name_vector;
+extern vector<int>hash_value_vector;
 
 class Repository{
 public:

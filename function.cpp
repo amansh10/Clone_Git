@@ -4,6 +4,9 @@
 
 #include"test.h"
 
+vector<string> file_name_vector;
+vector<int> hash_value_vector;
+
 static int callback(void *data, int argc, char **argv, char **azColName) {
     unordered_map<string, int>* file_map = static_cast<unordered_map<string, int>*>(data);
 
@@ -11,7 +14,11 @@ static int callback(void *data, int argc, char **argv, char **azColName) {
         string fileName = argv[0];  // FileName column
         int hashValue = stoi(argv[1]);  // HashValue column
         (*file_map)[fileName] = hashValue;
+
+
     }
+
+
     return 0;
 };
 
@@ -169,32 +176,78 @@ void Commit::new_commit() {
     };
 
 void Commit::particular_commit() {
-    ifstream fin;
+    ifstream fin1;
+    ifstream fin2;
     string line;
     loadDataFromDatabase(file_map);
 
-        string folder_name ;
-        cout<<"What is the repository name? "<<endl;
-        cin>>folder_name;
+    // Clear vectors before populating them
+    file_name_vector.clear();
+    hash_value_vector.clear();
 
-      cout<<"What is the last hash ID? "<<endl;
-      cin>>commit_ID;
+    // Debug print: Show what's in the file_map
+    cout << "Contents of file_map:" << endl;
+    for(const auto& entry : file_map) {
+        cout << "File: " << entry.first << ", Hash: " << entry.second << endl;
+        file_name_vector.push_back(entry.first);
+        hash_value_vector.push_back(entry.second);
+    }
 
+    string folder_name;
+    cout << "What is the repository name? " << endl;
+    cin >> folder_name;
 
-  for(auto C:file_map){
-      if(C.second==commit_ID){
-          fs::path fullPath = folder_name + "/" + C.first + ".txt";
-          fin.open(fullPath);
-          while(getline(fin,line)){
-              cout<<line<<endl;
-          };
+    cout << "What is the last hash ID? " << endl;
+    cin >> commit_ID;
 
-      };
+    // Debug print: Show the contents of our vectors
+    cout << "\nContents of vectors:" << endl;
+    for(size_t i = 0; i < file_name_vector.size(); i++) {
+        cout << "Index " << i << ": File=" << file_name_vector[i]
+             << ", Hash=" << hash_value_vector[i] << endl;
+    }
 
+    for(int i = 0; i < file_name_vector.size(); i++) {
+        if(hash_value_vector[i] == commit_ID) {
+            cout << "\nFound matching hash at index " << i << endl;
 
-  };
-  fin.close();
-};
+            fs::path fullPath = folder_name + "/" + file_name_vector[i] + ".txt";
+            cout << "Current file path: " << fullPath.string() << endl;
+
+            if(i > 0) {
+                fs::path fullPath2 = folder_name + "/" + file_name_vector[i-1] + ".txt";
+                cout << "Previous file path: " << fullPath2.string() << endl;
+
+                fin2.open(fullPath2);
+                if(fin2.is_open()) {
+                    cout << "Successfully opened previous file" << endl;
+                    cout << "Previous Line:" << endl;
+                    while(getline(fin2, line)) {
+                        cout << line << endl;
+                    }
+                    fin2.close();
+                } else {
+                    cout << "Failed to open previous file: " << fullPath2.string() << endl;
+                }
+            } else {
+                cout << "This is the first version, no previous file exists." << endl;
+            }
+
+            fin1.open(fullPath);
+            if(fin1.is_open()) {
+                cout << "Successfully opened current file" << endl;
+                cout << "New Line:" << endl;
+                while(getline(fin1, line)) {
+                    cout << line << endl;
+                }
+                fin1.close();
+            } else {
+                cout << "Failed to open current file: " << fullPath.string() << endl;
+            }
+        }
+    }
+}
+
 
 void Menu::menu() {
 
