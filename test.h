@@ -12,9 +12,7 @@
 #include<fstream>
 #include<sqlite3.h>
 #include<vector>
-
-
-
+#include <algorithm>
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -61,6 +59,8 @@ public:
     int commit_ID;
     string timestamp;
     unordered_map<string,string>snapshot;
+    vector<string>multiline;
+
 
 
     void new_commit();

@@ -11,13 +11,11 @@ static int callback(void *data, int argc, char **argv, char **azColName) {
     unordered_map<string, int>* file_map = static_cast<unordered_map<string, int>*>(data);
 
     if (argc >= 2 && argv[0] && argv[1]) {
-        string fileName = argv[0];  // FileName column
-        int hashValue = stoi(argv[1]);  // HashValue column
+        string fileName = argv[0];
+        int hashValue = stoi(argv[1]);
         (*file_map)[fileName] = hashValue;
 
-
     }
-
 
     return 0;
 };
@@ -64,10 +62,11 @@ void File::addFile() {
 
 string repository_name;
     cout<<"What is the repository name? "<<endl;
-    cin>>repository_name;
+    cin.ignore();
+    getline(cin,repository_name);
 
     cout << "What is the file name? "<<endl;
-    cin>>file_name;
+   getline(cin,file_name);
 
     last_hash=creaeHashValue();
 
@@ -112,26 +111,37 @@ string repository_name;
 void Commit::new_commit() {
     int rc= sqlite3_open("gitclone.db",&db);
 
+
     cout<<"What is the repository name? "<<endl;
-    cin>>repository_name;
+   cin.ignore();
+   getline(cin,repository_name);
 
     cout << "What is the file name? "<<endl;
-    cin>>file_name;
+    getline(cin,file_name);
 
     int version = 1;
     string baseFileName = file_name;
-    while (fs::exists(repository_name + "/" + file_name + "_" + to_string(version) + ".txt")) {
+    while (fs::exists(repository_name + "/" + file_name + "_" + to_string(version) + ".txt")){
         version++;
     }
 
     fs::path fullPath = repository_name + "/" + baseFileName + "_" + to_string(version) + ".txt";
 
-   cout<<"What new changes you wanna do? "<<endl;
-   cin.ignore();
-   getline(cin,newLine);
+    cout << "What new changes you wanna do? (Enter a blank line to finish)\n";
+    multiline.clear();  // always clear it before filling
+
+    while (true) {
+        getline(cin, newLine);
+        if (newLine.empty()) break;  // exit on blank line
+        multiline.push_back(newLine);
+    };
+
 
    ofstream fout(fullPath);
-   fout<<newLine;
+    for(auto C:multiline){
+      fout<<C<<endl;
+  };
+
    commit_ID=F.creaeHashValue();
    file_map[file_name + "_" + to_string(version)]=commit_ID;
     string fullFileName = file_name + "_" + to_string(version);
@@ -139,20 +149,21 @@ void Commit::new_commit() {
 
     rc= sqlite3_exec(db,insert_command.c_str(),nullptr,0,&errMsg);
 
+    file_name_vector.push_back(file_name);
+    hash_value_vector.push_back(commit_ID);
+
     sqlite3_close(db);
 
    fout.close();
 
-
     };
 
-
-    void Commit::commit_history() {
+void Commit::commit_history() {
         loadDataFromDatabase(file_map);
         string folder_name ;
         cout<<"What is the repository name? "<<endl;
-        cin>>folder_name;
-
+        cin.ignore();
+        getline(cin,folder_name);
         string line;
 
 
@@ -181,31 +192,36 @@ void Commit::particular_commit() {
     string line;
     loadDataFromDatabase(file_map);
 
-    // Clear vectors before populating them
+    //
+    vector<pair<string, int>> sorted_entries(file_map.begin(), file_map.end());
+
+    sort(sorted_entries.begin(), sorted_entries.end()); // sorts lexicographically
+
     file_name_vector.clear();
     hash_value_vector.clear();
 
-    // Debug print: Show what's in the file_map
-    cout << "Contents of file_map:" << endl;
-    for(const auto& entry : file_map) {
-        cout << "File: " << entry.first << ", Hash: " << entry.second << endl;
-        file_name_vector.push_back(entry.first);
-        hash_value_vector.push_back(entry.second);
+    for (auto& p : sorted_entries) {
+        file_name_vector.push_back(p.first);
+        hash_value_vector.push_back(p.second);
     }
+     //
+
+
+    cout << "\nContents of vectors:" << endl;
+    for(size_t i = 0; i < file_name_vector.size(); i++) {
+        cout << "Index " << i << ": File=" << file_name_vector[i]
+             << ", Hash=" << hash_value_vector[i] << endl;
+    };
 
     string folder_name;
     cout << "What is the repository name? " << endl;
-    cin >> folder_name;
+    cin.ignore();
+    getline(cin,folder_name);
 
     cout << "What is the last hash ID? " << endl;
     cin >> commit_ID;
 
     // Debug print: Show the contents of our vectors
-    cout << "\nContents of vectors:" << endl;
-    for(size_t i = 0; i < file_name_vector.size(); i++) {
-        cout << "Index " << i << ": File=" << file_name_vector[i]
-             << ", Hash=" << hash_value_vector[i] << endl;
-    }
 
     for(int i = 0; i < file_name_vector.size(); i++) {
         if(hash_value_vector[i] == commit_ID) {
